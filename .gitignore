@@ -1,0 +1,16 @@
+# Secrets — 含真实 token/key，绝不提交
+config.json
+
+# 运行产物
+logs/
+__pycache__/
+*.pyc
+
+# 每日归档为生成产物：仅保留最新几天做展示，其余忽略
+archive/*
+!archive/2026-06-15.md
+!archive/2026-06-15.html
+!archive/2026-06-16.md
+!archive/2026-06-16.html
+!archive/2026-06-17.md
+!archive/2026-06-17.html
