@@ -9,9 +9,9 @@ ph-daily/
 ├── AGENTS.md / CLAUDE.md     Agent 工作约定
 ├── config.example.json       配置模板
 ├── config.json               本机密钥（不提交）
-├── run_daily_full.sh         一键运行完整流程
+├── run_daily_full.sh         阶段1：抓数+归档（文案由 Agent / product-sense）
 ├── scripts/                  可执行代码
-│   ├── ph_daily.py           抓取 PH 榜单、生成日报
+│   ├── ph_daily.py           抓取 PH 榜单、生成日报（不调 LLM）
 │   ├── render_xhs.py         渲染小红书图片
 │   ├── generate_index.py     生成知识库索引
 │   ├── check_logo.py         检查产品 Logo

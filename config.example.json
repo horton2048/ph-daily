@@ -1,8 +1,5 @@
 {
   "ph_token": "PASTE_PRODUCT_HUNT_DEVELOPER_TOKEN",
   "slack_webhook_url": "PASTE_SLACK_INCOMING_WEBHOOK_URL",
-  "llm_api_key": "",
-  "llm_base_url": "https://apihub.agnes-ai.com/v1",
-  "llm_model": "agnes-2.0-flash",
   "top_n": 10
 }

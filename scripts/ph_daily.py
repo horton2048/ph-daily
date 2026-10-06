@@ -6,15 +6,15 @@
 ph_daily.py — Product Hunt 每日热门日报
 
 管线: 官方 V2 GraphQL API 抓取当日 Top N(按票数)
-      -> LLM(Agnes AI 网关, agnes-2.0-flash)出中文 tagline + 一句话点评
       -> 推 Slack(Block Kit 富卡片) + 落本地 Markdown 归档
+      （中文文案 / 点评由 Agent 按 .claude/skills/product-sense 产出，脚本不调模型）
 
 设计要点:
 - 时区: PH 的"今日榜"按太平洋时间(PT)0 点结算。脚本按 PT 日界显式
   取 postedAfter/postedBefore,不依赖 API 隐式的 today。北京时间 9:30 跑时,
   PT 约为前一日傍晚,"今日(PT)"榜已有大半天数据,排名足够有意义。
-- LLM: 走 OpenAI 兼容网关(config 的 llm_*),不用 response_format,改裸 JSON
-  + 防御性解析;强约束简体中文。点评失败时降级为只用英文 tagline,日报照发。
+- 文案: 脚本只抓数据与渲染; zh_tagline / comment 字段留空,由 Agent 按
+  product-sense skill 撰写。渲染侧已有非 LLM 回退(英文 tagline)。
 - 零第三方依赖(除 tzdata 供 zoneinfo 在 Windows 上识别 IANA 时区)。
 
 用法: uv run ph_daily.py            # 取 PT 今日榜
@@ -196,74 +196,6 @@ def fetch_with_fallback(token: str, day_pt: datetime, top_n: int, min_count: int
     return posts, used_day
 
 
-# --------------------------------------------------------------------------- #
-# LLM 中文点评(Agnes AI 网关, OpenAI 兼容)
-# --------------------------------------------------------------------------- #
-def annotate_zh(cfg: dict, posts: list[dict]) -> None:
-    """批量给 posts 加 zh_tagline / comment 字段。失败则降级(留空)。
-
-    走 OpenAI 兼容的 /chat/completions,provider 由 config 的 llm_* 字段决定;
-    当前用 Agnes AI 免费网关的 agnes-2.0-flash(非推理、无 <think>、~1s)。
-    """
-    api_key = cfg.get("llm_api_key")
-    if not api_key:
-        return
-    items = [
-        {"i": i, "name": p["name"], "tagline": p["tagline"], "desc": p["description"][:300]}
-        for i, p in enumerate(posts)
-    ]
-    sys_prompt = (
-        "你是科技产品编辑。下面是 Product Hunt 今日热门产品列表。"
-        "对每个产品:1) 把 tagline 翻译成自然的简体中文(zh);"
-        "2) 写一句不超过 40 字的简体中文点评(comment),说清它解决什么问题/亮点。"
-        "必须用简体中文,严禁葡萄牙语或其他语言。"
-        '只输出 JSON 数组,每项 {"i":序号,"zh":"...","comment":"..."},不要任何解释或代码块标记。'
-    )
-    body = json.dumps({
-        "model": cfg.get("llm_model", "agnes-2.0-flash"),
-        "messages": [
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": json.dumps(items, ensure_ascii=False)},
-        ],
-        # 低温让 JSON 输出更可控。
-        "temperature": 0.2,
-    }).encode("utf-8")
-    url = cfg.get("llm_base_url", "https://apihub.agnes-ai.com/v1").rstrip("/") + "/chat/completions"
-    # 重试:网关偶发抖动或返回非法 JSON,重抽一次通常就过;3 次都不行才降级为纯英文。
-    last_err = None
-    for attempt in range(1, 4):
-        try:
-            raw = http_post(url, body, {"Authorization": f"Bearer {api_key}"}, timeout=90)
-            data = json.loads(raw.decode("utf-8"))
-            content = data["choices"][0]["message"]["content"]
-            parsed = _loads_lenient(content)
-            by_i = {int(x["i"]): x for x in parsed}
-            for i, p in enumerate(posts):
-                x = by_i.get(i)
-                if x:
-                    p["zh_tagline"] = (x.get("zh") or "").strip()
-                    p["comment"] = (x.get("comment") or "").strip()
-            return
-        except Exception as e:
-            last_err = e
-            print(f"[warn] LLM 点评第 {attempt}/3 次失败: {e}", file=sys.stderr)
-    print(f"[warn] LLM 点评 3 次均失败,降级为纯英文: {last_err}", file=sys.stderr)
-
-
-def _loads_lenient(text: str):
-    """剥掉推理 <think> 块、可能的 ```json 围栏,截取第一个 [..] 数组再解析。"""
-    text = text.strip()
-    # agnes-2.0-flash 不带 <think>;但若换成推理模型会在 content 里带
-    # <think>...</think>,先剥掉,否则 think 里的方括号会把数组切割逻辑带偏。
-    if "</think>" in text:
-        text = text.split("</think>", 1)[-1]
-    if "```" in text:
-        text = text.replace("```json", "").replace("```", "")
-    l, r = text.find("["), text.rfind("]")
-    if l != -1 and r != -1:
-        text = text[l:r + 1]
-    return json.loads(text)
-
 
 # --------------------------------------------------------------------------- #
 # 渲染: Slack + Markdown
@@ -426,7 +358,6 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="指定 PT 日期 YYYY-MM-DD(默认 PT 今日)")
     ap.add_argument("--dry-run", action="store_true", help="不推 Slack,只打印 + 落 MD")
-    ap.add_argument("--no-zh", action="store_true", help="跳过 LLM 中文点评")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -445,10 +376,7 @@ def main() -> None:
 
     backfill_votes_from_producthunt_pages(posts)
 
-    if not args.no_zh:
-        annotate_zh(cfg, posts)
-
-    # 归档
+    # 归档（zh_tagline/comment 留空；文案由 Agent 按 product-sense skill 写）
     ARCHIVE_DIR.mkdir(exist_ok=True)
     md = build_markdown(posts, used_day)
     md_path = ARCHIVE_DIR / f"{used_day.strftime('%Y-%m-%d')}.md"

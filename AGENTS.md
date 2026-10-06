@@ -26,7 +26,7 @@ PH 产品、判断它的差异化、写扩展阅读档案、提炼一句话精�
 
 ## 现状
 
-触发方式：**手动挡**（定时任务已于 2026-08-11 关闭，想跑就 `bash run_daily_full.sh` 或对我说"做今天的 product-sense"）。
+触发方式：**手动挡**（定时任务已于 2026-08-11 关闭）。`bash run_daily_full.sh` 只跑阶段1（抓数+归档）；阶段2/3 对我说"做今天的 product-sense"，由 Agent 按 skill 写文案与出图（脚本不再内置调 LLM / Codex CLI）。
 
 ## 治理
 
