@@ -1,0 +1,8 @@
+# Google Cloud Platform 相关产品
+
+> 共 2 个 · 最后更新 2026-10-05
+
+## 产品列表（按日期倒序）
+
+- [myAIcademy](../2026-09-04-myaicademy.md) · 企业 AI 素养培训平台 · 2026-09-04
+- [BearDrive](../2026-08-12-beardrive.md) · AI agent 产物共享/团队协作 · 2026-08-12

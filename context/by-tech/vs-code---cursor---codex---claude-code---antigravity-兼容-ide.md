@@ -1,0 +1,7 @@
+# VS Code / Cursor / Codex / Claude Code / Antigravity 兼容 IDE 相关产品
+
+> 共 1 个 · 最后更新 2026-10-05
+
+## 产品列表（按日期倒序）
+
+- [easyspecs.ai](../2026-09-11-easyspecs-ai.md) · Spec 评审平台 / SDD 工具 · 2026-09-11

@@ -1,0 +1,7 @@
+# Fairwind Program 受限访问（Cyber 变体） 相关产品
+
+> 共 1 个 · 最后更新 2026-10-05
+
+## 产品列表（按日期倒序）
+
+- [Google Gemini 3.8 Flash and Cyber](../2026-09-04-gemini-3-8-flash.md) · 轻量前沿模型 API + 网络安全模型 · 2026-09-04

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+  小红书信息图模板 · mono 版 · 375×500
+  纯白底 + 纯黑字，1px 黑色描边方框承载 logo，无装饰纹理。
+  与 cream-glass (xhs-template.html) 并列存在，按 render_xhs.py --template mono 选用。
+  占位符 {{...}} 由 scripts/render_xhs.py 替换。
+  logo：{{LOGO_HTML}} 由渲染脚本注入 <img class="logo cover"> 或失败兜底的纯黑块+白色首字母。
+-->
+<html lang="zh"><head><meta charset="UTF-8">
+<title>{{PRODUCT_NAME}} · 小红书信息图 mono</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:375px;height:500px;background:#FFFFFF;overflow:hidden;
+    font-family:-apple-system,"PingFang SC","SF Pro Display","Helvetica Neue",sans-serif}
+  .stage{width:375px;height:500px;position:relative;overflow:hidden;color:#000000;background:#FFFFFF}
+  .inner{position:relative;z-index:3;
+    padding:40px 26px 50px;height:100%;
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+    justify-content:space-between}
+
+  .brandline{font-size:9px;font-weight:700;letter-spacing:2px;color:#000000;
+    margin-bottom:18px;text-transform:uppercase}
+
+  .glass{width:96px;height:96px;border-radius:22px;position:relative;overflow:hidden;
+    background:#FFFFFF;border:1.5px solid #000000;
+    box-shadow:none}
+  .glass .logo{position:absolute;inset:0;z-index:1;width:100%;height:100%}
+  .glass .logo.cover{object-fit:cover}
+  .glass .logo.contain{object-fit:contain;padding:10px}
+  .glass .logo-fallback{position:absolute;inset:0;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+    background:#000000;color:#FFFFFF;font-size:44px;font-weight:900;letter-spacing:0}
+
+  .name{font-size:var(--name-fs, 38px);font-weight:900;letter-spacing:-.5px;color:#000000;
+    margin-top:14px;line-height:1.1;text-wrap:balance;overflow-wrap:anywhere;
+    word-break:normal;line-break:strict;max-width:330px}
+  .sub{font-size:11px;font-weight:700;letter-spacing:2px;color:#000000;
+    margin-top:10px;text-wrap:balance;overflow-wrap:anywhere;word-break:normal;
+    line-break:strict;max-width:320px}
+  .one{font-size:13px;line-height:1.75;color:#000000;font-weight:600;margin-top:18px;
+    max-width:320px;text-wrap:balance;overflow-wrap:anywhere;word-break:normal;
+    line-break:strict}
+  .one b{color:#000000;font-weight:800}
+
+  .numline{display:flex;align-items:baseline;gap:6px;margin-top:18px;padding-top:18px;
+    border-top:1px solid #000000;width:100%;justify-content:center}
+  .numline .vote{font-size:34px;font-weight:900;color:#000000;letter-spacing:-1px}
+  .numline .voteb{font-size:11px;font-weight:700;color:#000000}
+
+  .foot{position:absolute;bottom:14px;left:0;right:0;display:flex;
+    justify-content:space-between;padding:0 26px;
+    font-size:8px;color:#000000;font-weight:600;letter-spacing:.5px}
+</style>
+</head><body>
+<div class="stage">
+  <div class="inner">
+    <div class="brandline">PRODUCT HUNT · DAILY PICK</div>
+    <div class="glass">
+      {{LOGO_HTML}}
+    </div>
+    <div class="name" style="--name-fs:{{NAME_FONT_SIZE}}px">{{PRODUCT_NAME}}</div>
+    <div class="sub">{{SUB}}</div>
+    <div class="numline"><span class="vote">{{VOTES}}</span><span class="voteb">人点赞 · 今日 #{{RANK}}</span></div>
+    <div class="one">{{ONE_LINER}}</div>
+    <div class="foot"><span>来源：Product Hunt 每日榜</span><span>{{DATE}}</span></div>
+  </div>
+</div></body></html>

@@ -1,23 +1,24 @@
-# ph-daily — Product Hunt 每日热门日报
+# ph-daily — PH 产品每日观察 专家 Agent
 
-每天 09:30(本机计划任务)拉取 Product Hunt 当日 Top 10 热门产品 →
-LLM(Agnes AI)生成中文 tagline + 一句话点评 → 推 Slack 富卡片 + 落本地 Markdown 归档。
+每天拉取 Product Hunt 当日 Top 10 热门产品 → LLM 生成中文 tagline + 一句话点评 →
+落本地 Markdown 归档；再由 Claude Code 的 `product-sense` skill 逐个深挖，沉淀成
+`context/` 知识库，出小红书图文。完整架构见项目根的 `CLAUDE.md`。
+
+目录地图见 [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)。
 
 ## 架构(及为什么这么选)
 
 - **数据源:Product Hunt 官方 V2 GraphQL API**。V1 REST 已于 2023 关停;爬虫违反 ToS 且易碎。
   Developer Token 免费、只读、不过期。注意默认仅限非商用。
 - **时区:按太平洋时间(PT)日界取榜**。PH 的"今日榜"按 PT 0 点结算;脚本用显式
-  `postedAfter/postedBefore`,不依赖 API 隐式 today。北京 09:30 跑时 PT 约前一日傍晚,
-  当日榜已有大半天数据。产品太少时自动回退前一 PT 日。
+  `postedAfter/postedBefore`,不依赖 API 隐式 today。产品太少时自动回退前一 PT 日。
 - **点评:Agnes AI 网关 `agnes-2.0-flash`**(OpenAI 兼容、免费、非推理无 `<think>`、~1s)。
   不用 `response_format`(实测不可靠),裸 JSON + 防御性解析(剥 `<think>`/围栏)+ 失败重试 3 次;
   强约束简体中文。点评失败自动降级为纯英文,日报照发。provider 由 config 的 `llm_*` 字段决定。
-- **调度:本机 Windows 计划任务**。云端托管 routine 碰不到本地盘、headless 也拿不到
-  Slack OAuth,故选本机。Slack 用 Incoming Webhook(比复用 MCP token 稳)。
-- **归档双格式,MD 给 AI、HTML 给人**。同一份数据同时落 `.md` 和 `.html`:Markdown
-  标记即语义、token 开销小,适合喂模型 / 检索分析;HTML 带样式、可点链接,适合人看与分享。
-  要让 AI 读历史日报时,优先喂 `.md` 而非 `.html`。
+- **调度:手动挡**。之前用 macOS launchd 每天定时跑,已于 2026-08-11 关闭;现在想跑就手动
+  `bash run_daily_full.sh` 或对 Codex 说"做今天的 product-sense"。
+- **归档只留 Markdown**。之前同时落 `.md`/`.html` 两份,HTML 那份没人看,2026-08-12 起
+  只产出 `.md`(给 AI 读 / 检索用,token 开销也小)。
 
 ## 一次性配置
 
@@ -39,40 +40,37 @@ LLM(Agnes AI)生成中文 tagline + 一句话点评 → 推 Slack 富卡片 + �
 
 ### 4. 生成 config.json
 
-```powershell
-copy config.example.json config.json   # 然后填入上面三处凭据
-```
-
-### 5. 注册计划任务
-```powershell
-cd C:\Users\huang\projects\ph-daily
-powershell -ExecutionPolicy Bypass -File .\setup_task.ps1
+```bash
+cp config.example.json config.json   # 然后填入上面三处凭据
 ```
 
 ## 手动测试 / 运行
 
-```powershell
-uv run ph_daily.py --dry-run        # 抓取 + 点评 + 落 MD,不推 Slack(预览)
-uv run ph_daily.py                  # 完整跑一次(含 Slack)
-uv run ph_daily.py --date 2026-06-01  # 取指定 PT 日
-uv run ph_daily.py --no-zh          # 跳过中文点评(省一次 LLM 调用)
+```bash
+uv run scripts/ph_daily.py --dry-run          # 抓取 + 点评 + 落 MD,不推 Slack(预览)
+uv run scripts/ph_daily.py                    # 完整跑一次(含 Slack)
+uv run scripts/ph_daily.py --date 2026-06-01  # 取指定 PT 日
+uv run scripts/ph_daily.py --no-zh            # 跳过中文点评(省一次 LLM 调用)
 
-Start-ScheduledTask -TaskName "PH-Daily-Digest"   # 触发计划任务
-Get-ScheduledTaskInfo -TaskName "PH-Daily-Digest" # 看下次运行/上次结果
+bash run_daily_full.sh                # 完整流程:抓数据 + Top 10 调研 + 10 张图 + 发布文案
+bash run_daily_full.sh --check        # 只检查 Codex CLI 是否存在且已登录
 ```
 
 ## 文件
-- `ph_daily.py` — 主脚本(零三方依赖,仅 tzdata)
+- `scripts/ph_daily.py` — 主脚本(零三方依赖,仅 tzdata)
+- `scripts/render_xhs.py` — 小红书图片渲染脚本
+- `scripts/_retired/` — 已停用的历史脚本，仅供追溯
 - `config.json` — 凭据(**含密钥,勿提交/分享**)
-- `run.ps1` — UTF-8 包装 + 日志,计划任务调用此脚本
-- `setup_task.ps1` — 注册/更新计划任务
+- `run_daily_full.sh` — 手动跑完整流程用(以前由 launchd 定时触发,现已关闭)
 - `archive/YYYY-MM-DD.md` — 每日归档(Markdown,给 AI / 检索)
-- `archive/YYYY-MM-DD.html` — 每日归档(HTML,给人看 / 分享)
 - `logs/YYYY-MM-DD.log` — 每日运行日志
+- `.claude/skills/product-sense/` — 本项目唯一 Skill：深挖产品 + 出小红书图
+- `data/raw/product-hunt/` — PH API 原始响应和调试快照，不是业务入口
 
 ## 排错
 - **PH 403/401**:token 没填或失效 → 重新生成。
 - **PH 返回空**:可能 PT 当日刚开始,加 `--date` 指定昨天试试。
-- **Slack 没收到**:webhook URL 错或频道被移除 → 重建 webhook。日志看 `logs\`。
+- **Slack 没收到**:webhook URL 错或频道被移除 → 重建 webhook。日志看 `logs/`。
 - **点评是英文/葡语**:日志看 LLM 是否报错降级(`[warn] LLM 点评…失败`);模型/网关由 `config.json` 的 `llm_*` 字段决定,默认 Agnes `agnes-2.0-flash`。
 - **限流**:PH 6250 复杂度/15 分钟,每天一次远没问题。
+- **研究阶段启动失败**:先跑 `bash run_daily_full.sh --check`;脚本优先使用桌面 App 内置 Codex CLI 和 ChatGPT 登录态，不再依赖 Claude 网关余额。

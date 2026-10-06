@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!--
+  小红书信息图模板 · calendar 版 · 375×500
+  撕页日历造型：白色页面坐在浅灰桌面上，顶部 11 个金属螺旋环，
+  左上大日期 "11 SEP"、右上 "排名 1"，下方超大点赞数 + 一句话。
+  与 cream-glass / mono 三套并列，按 render_xhs.py --template calendar 选用。
+  占位符 {{...}} 由 scripts/render_xhs.py 替换。
+-->
+<html lang="zh"><head><meta charset="UTF-8">
+<title>{{PRODUCT_NAME}} · 小红书信息图 calendar</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:375px;height:500px;overflow:hidden;
+    font-family:-apple-system,"PingFang SC","SF Pro Display","Helvetica Neue",sans-serif;
+    background:#EFEFEC}
+  .stage{width:375px;height:500px;position:relative;overflow:hidden;background:#EFEFEC}
+
+  /* 日历页本体 */
+  .page{position:absolute;top:30px;left:18px;right:18px;bottom:24px;
+    background:#FFFFFF;border-radius:4px;
+    box-shadow:
+      0 1px 1px rgba(0,0,0,0.04),
+      0 6px 16px rgba(0,0,0,0.10),
+      0 18px 32px rgba(0,0,0,0.08);
+    overflow:hidden}
+
+  /* 装订条（顶部金属螺旋环） */
+  .binding{position:absolute;top:0;left:18px;right:18px;height:18px;z-index:10;pointer-events:none}
+  .ring{position:absolute;top:4px;width:12px;height:22px;
+    border:2px solid #6F6F6F;border-radius:50%;background:transparent}
+  /* 11 个环，按 30px 间距均布：left = 18 + i*30 */
+  .ring:nth-child(1){left:18px}
+  .ring:nth-child(2){left:48px}
+  .ring:nth-child(3){left:78px}
+  .ring:nth-child(4){left:108px}
+  .ring:nth-child(5){left:138px}
+  .ring:nth-child(6){left:168px}
+  .ring:nth-child(7){left:198px}
+  .ring:nth-child(8){left:228px}
+  .ring:nth-child(9){left:258px}
+  .ring:nth-child(10){left:288px}
+  .ring:nth-child(11){left:318px}
+
+  /* 内容容器 */
+  .inner{position:absolute;inset:30px 22px 22px;display:flex;flex-direction:column}
+
+  /* 左上大日期 */
+  .date-label{position:absolute;top:22px;left:24px;color:#000}
+  .date-label .day{font-size:56px;font-weight:900;line-height:1;letter-spacing:-2px}
+  .date-label .month{font-size:16px;font-weight:800;letter-spacing:3px;margin-top:2px}
+
+  /* 右上排名 */
+  .rank-label{position:absolute;top:24px;right:24px;text-align:right;color:#000}
+  .rank-label .label{font-size:18px;font-weight:800;letter-spacing:1px}
+  .rank-label .num{font-size:56px;font-weight:900;line-height:1;margin-top:-2px;letter-spacing:-2px}
+
+  /* 中间内容（居中排列） */
+  .center{display:flex;flex-direction:column;align-items:center;margin-top:108px;text-align:center}
+
+  .glass{width:80px;height:80px;border-radius:18px;position:relative;overflow:hidden;
+    background:#000000}
+  .glass .logo{position:absolute;inset:0;z-index:1;width:100%;height:100%;mix-blend-mode:normal}
+  .glass .logo.cover{object-fit:cover}
+  .glass .logo.contain{object-fit:contain;padding:8px}
+  .glass .logo-fallback{position:absolute;inset:0;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+    background:#000000;color:#FFFFFF;font-size:38px;font-weight:900}
+
+  .name{font-size:var(--name-fs, 34px);font-weight:900;letter-spacing:-.5px;color:#000;
+    margin-top:14px;line-height:1.05;text-wrap:balance;overflow-wrap:anywhere;
+    word-break:normal;line-break:strict;max-width:295px}
+  .sub{font-size:11px;font-weight:700;letter-spacing:3px;color:#000;
+    margin-top:8px;text-wrap:balance;overflow-wrap:anywhere;word-break:normal;
+    line-break:strict;max-width:295px}
+
+  .divider{width:70px;height:1.5px;background:#000;margin-top:14px}
+
+  .vote-row{display:flex;align-items:baseline;gap:5px;margin-top:8px;justify-content:center}
+  .vote-row .vote{font-size:46px;font-weight:900;color:#000;line-height:1;letter-spacing:-2px}
+  .vote-row .voteb{font-size:12px;font-weight:700;color:#000;letter-spacing:1px}
+
+  .one{font-size:11px;line-height:1.55;color:#000;font-weight:600;margin-top:8px;
+    max-width:295px;text-wrap:balance;overflow-wrap:anywhere;word-break:normal;
+    line-break:strict;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden}
+
+  /* 底部脚注 */
+  .foot{position:absolute;bottom:8px;left:22px;right:22px;display:flex;
+    justify-content:space-between;font-size:9px;color:#000;font-weight:600;letter-spacing:.3px}
+</style>
+</head><body>
+<div class="stage">
+  <div class="binding">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div>
+  </div>
+  <div class="page">
+    <div class="date-label">
+      <div class="day">{{DAY}}</div>
+      <div class="month">{{MONTH}}</div>
+    </div>
+    <div class="rank-label">
+      <div class="label">排名</div>
+      <div class="num">{{RANK}}</div>
+    </div>
+    <div class="inner">
+      <div class="center">
+        <div class="glass">
+          {{LOGO_HTML}}
+        </div>
+        <div class="name" style="--name-fs:{{NAME_FONT_SIZE}}px">{{PRODUCT_NAME}}</div>
+        <div class="sub">{{SUB}}</div>
+        <div class="divider"></div>
+        <div class="vote-row"><span class="vote">{{VOTES}}</span><span class="voteb">人点赞</span></div>
+        <div class="one">{{ONE_LINER}}</div>
+      </div>
+    </div>
+    <div class="foot"><span>来源：Product Hunt 每日榜</span><span>{{DATE}}</span></div>
+  </div>
+</div></body></html>
