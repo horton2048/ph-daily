@@ -59,7 +59,7 @@ ARCHIVE_DATE=$(ls -t archive/*.md 2>/dev/null | head -1 | grep -oE '[0-9]{4}-[0-
 {
   echo "=== $(date '+%Y-%m-%d %H:%M:%S') 阶段2: 扩展阅读+10张信息图+文案 (日期: $ARCHIVE_DATE) ==="
 
-  PROMPT="执行本项目 .claude/skills/product-sense/SKILL.md 的完整流程：对 $ARCHIVE_DATE 的 PH 每日榜，为全部 10 个产品研究并写 context 档案，在 xhs/$ARCHIVE_DATE/data.json 中写齐 10 条，渲染 10 张信息图 PNG，并生成 xhs/$ARCHIVE_DATE/caption.md（三句跨产品洞察与按排名排列的 10 个产品话题）。已有合格产出可复用或跳过，补齐缺失项。严格遵守 skill 的事实核验、logo 核验、美观性审查和交付前逐项核对规则。全部完成后简短报告产出文件。"
+  PROMPT="执行本项目 .claude/skills/product-sense/SKILL.md 的完整流程：对 $ARCHIVE_DATE 的 PH 每日榜，为全部 10 个产品研究并写 context 档案，在 xhs/$ARCHIVE_DATE/data.json 中写齐 10 条，渲染 10 张信息图 PNG，并生成 xhs/$ARCHIVE_DATE/caption.md（榜一一句话洞察：关于今天的产品趋势，三十个字以内；加 5 个话题标签，不是 10 个）。已有合格产出可复用或跳过，补齐缺失项。严格遵守 skill 的事实核验、logo 核验、美观性审查和交付前逐项核对规则。全部完成后简短报告产出文件。"
 
   # 官方非交互入口：进度写 stderr，最终答复写 stdout；两者均由外层重定向进日志。
   # workspace-write 把自动修改范围限制在本项目，approval_policy=never 避免无人值守时等待交互审批。
