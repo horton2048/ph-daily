@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-03",
+  "products": [
+    {
+      "rank": 1,
+      "slug": "zoowork",
+      "name": "ZooWork",
+      "votes": 187,
+      "logo_url": "https://ph-files.imgix.net/3c946e25-562b-4df5-9c91-5a2d881fb80a.png?auto=format",
+      "sub": "Agent交付平台",
+      "one_liner": "把行业戏本打成技能，<b>专家也能交助手</b><br>约七天推上真实流程",
+      "hashtag": "#AI助手交付"
+    },
+    {
+      "rank": 2,
+      "slug": "miso-com",
+      "name": "miso.com",
+      "votes": 162,
+      "logo_url": "https://ph-files.imgix.net/3a768d0b-89ac-4465-af20-91611a045de6.png?auto=format",
+      "sub": "短信订旅行",
+      "one_liner": "短信里订机票酒店，<b>苹果批准旅行代理</b><br>记住积分还能改签",
+      "hashtag": "#iMessage订票"
+    },
+    {
+      "rank": 3,
+      "slug": "prefer-2",
+      "name": "Prefer",
+      "votes": 113,
+      "logo_url": "https://ph-files.imgix.net/483e53ba-0bc7-4120-9e86-3ba498fd832f.png?auto=format",
+      "sub": "AEO执行平台",
+      "one_liner": "看见缺口就写一页，<b>发完再测引用</b><br>五引擎约二十四美元起",
+      "hashtag": "#回答引擎优化"
+    },
+    {
+      "rank": 4,
+      "slug": "kindle-2026",
+      "name": "Kindle 2026",
+      "votes": 94,
+      "logo_url": null,
+      "sub": "齐平屏电子书",
+      "one_liner": "去掉凸边框更贴兜，<b>开书快约三成</b><br>六点八毫米一百四十克",
+      "hashtag": "#Kindle阅读器"
+    },
+    {
+      "rank": 5,
+      "slug": "muse-22",
+      "name": "Muse Gadgets",
+      "votes": 89,
+      "logo_url": "https://ph-files.imgix.net/f79f1415-f9d1-4073-bbb2-3cf23acc7e13.png?auto=format",
+      "sub": "开源AI硬件套件",
+      "one_liner": "Meta开源接自制板，<b>给Muse加外壳</b><br>家用适配器限量赠送",
+      "hashtag": "#开源AI硬件"
+    },
+    {
+      "rank": 6,
+      "slug": "scmd",
+      "name": "SCMD",
+      "votes": 76,
+      "logo_url": "https://ph-files.imgix.net/42c212d3-d3ac-4c87-9615-e18908bc767a.png?auto=format",
+      "sub": "Claude记忆审阅",
+      "one_liner": "翻卡片决定留或删，<b>确认前不改文件</b><br>本地运行无遥测",
+      "hashtag": "#Claude记忆管理"
+    },
+    {
+      "rank": 7,
+      "slug": "foundrradio",
+      "name": "FoundrRadio",
+      "votes": 74,
+      "logo_url": "https://ph-files.imgix.net/5a3e7bb0-5831-4350-8ed6-6099cbfa0e51.png?auto=format",
+      "sub": "创始人数字电台",
+      "one_liner": "像调频一样选频道，<b>买个频率就能播</b><br>收听免费建台另计",
+      "hashtag": "#创始人电台"
+    },
+    {
+      "rank": 8,
+      "slug": "notchware",
+      "name": "Notchware",
+      "votes": 71,
+      "logo_url": "https://ph-files.imgix.net/86e30cb3-0091-4e81-a832-5169f81cc7df.png?auto=format",
+      "sub": "Mac刘海状态岛",
+      "one_liner": "刘海里看播放与电量，<b>助手要批准会提醒</b><br>Pro一次买断约四美元",
+      "hashtag": "#Mac刘海工具"
+    },
+    {
+      "rank": 9,
+      "slug": "una-mano",
+      "name": "una mano",
+      "votes": 70,
+      "logo_url": "https://ph-files.imgix.net/2ded3c8f-1328-4ecb-a838-d60a3b4178f2.png?auto=format",
+      "sub": "单手拇指键盘",
+      "one_liner": "键盘整块挪到拇指侧，<b>键位不用重学</b><br>基础版永久免费",
+      "hashtag": "#单手键盘"
+    },
+    {
+      "rank": 10,
+      "slug": "cubicle-2",
+      "name": "Cubicle",
+      "votes": 69,
+      "logo_url": "https://ph-files.imgix.net/37958bd4-270d-4a20-b03b-82bca5e38d4e.png?auto=format",
+      "sub": "只读Agent看板",
+      "one_liner": "像素办公室一眼状态，<b>故意做成只读</b><br>举手就知道谁等你",
+      "hashtag": "#Agent可视化"
+    }
+  ]
+}

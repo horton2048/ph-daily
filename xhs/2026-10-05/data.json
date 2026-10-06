@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-05",
+  "products": [
+    {
+      "rank": 1,
+      "slug": "fastrouter-ai",
+      "name": "FastRouter.ai",
+      "votes": 228,
+      "logo_url": "https://ph-files.imgix.net/998bdc2f-69ab-4024-9d20-630d5c9513b1.png?auto=format",
+      "sub": "AI模型调度台",
+      "one_liner": "两百多个模型一个接口，<b>模型钱不加价</b><br>每周告诉你哪里能省",
+      "hashtag": "#AI模型路由"
+    },
+    {
+      "rank": 2,
+      "slug": "spira-ai",
+      "name": "Spira Maxima",
+      "votes": 216,
+      "logo_url": "https://ph-files.imgix.net/94b1ec75-7c2c-4535-b9a3-3ab23f8a61ce.png?auto=format",
+      "sub": "短视频生成模型",
+      "one_liner": "贴进文字就出成片，<b>不用再进剪辑</b><br>照着当周爆款来剪",
+      "hashtag": "#AI短视频"
+    },
+    {
+      "rank": 3,
+      "slug": "invofox",
+      "name": "Invofox Self Serve",
+      "votes": 176,
+      "logo_url": "https://ph-files.imgix.net/f9b532e4-4dd2-479c-9077-d9cd897f7aed.png?auto=format",
+      "sub": "文档提取接口",
+      "one_liner": "任意文档转成数据，<b>出错文档不收钱</b><br>官方称准确率超99%",
+      "hashtag": "#发票识别"
+    },
+    {
+      "rank": 4,
+      "slug": "opengeni",
+      "name": "Opengeni",
+      "votes": 157,
+      "logo_url": "https://ph-files.imgix.net/ae9b99f8-88c1-4613-af41-eb50db9e16c0.png?auto=format",
+      "sub": "AI助手运行平台",
+      "one_liner": "断线也能接着跑，<b>危险操作先问人</b><br>云端只加收5%模型费",
+      "hashtag": "#开源AI助手"
+    },
+    {
+      "rank": 5,
+      "slug": "dailyhelm",
+      "name": "DailyHelm",
+      "votes": 150,
+      "logo_url": "https://ph-files.imgix.net/75768996-691b-4bc1-bad5-fcc415ad227a.gif?auto=format",
+      "sub": "AI经营体检",
+      "one_liner": "隔夜看完各家数据，<b>早上给你待办单</b><br>按能多赚多少排序",
+      "hashtag": "#网店经营"
+    },
+    {
+      "rank": 6,
+      "slug": "cloudflare",
+      "name": "Web Search API",
+      "votes": 113,
+      "logo_url": "https://ph-files.imgix.net/80c285b3-4d41-4df4-97da-389601a4f4a0.vnd.microsoft.icon?auto=format",
+      "sub": "AI联网搜索接口",
+      "one_liner": "让AI查实时网页，<b>三家搜索任你选</b><br>按原价计费不加价",
+      "hashtag": "#AI联网搜索"
+    },
+    {
+      "rank": 7,
+      "slug": "heygen",
+      "name": "HyperFrames Studio",
+      "votes": 101,
+      "logo_url": "https://www.hyperframes.dev/favicon-dark.svg",
+      "sub": "AI视频剪辑器",
+      "one_liner": "让编程助手剪视频，<b>在画面上圈改</b><br>底层开源五万多星",
+      "hashtag": "#AI剪视频"
+    },
+    {
+      "rank": 8,
+      "slug": "devpit",
+      "name": "devpit",
+      "votes": 93,
+      "logo_url": "https://ph-files.imgix.net/afe566a2-6c31-4942-a979-d3e4952907d6.png?auto=format",
+      "sub": "编程助手控制台",
+      "one_liner": "每个项目一个终端，<b>每次调用标价钱</b><br>拖动卡片就开工",
+      "hashtag": "#AI编程"
+    },
+    {
+      "rank": 9,
+      "slug": "jarq",
+      "name": "Jarq",
+      "votes": 86,
+      "logo_url": "https://ph-files.imgix.net/28c56738-c1cb-4eaa-9b76-00f416127b48.png?auto=format",
+      "sub": "Mac光标处改写",
+      "one_liner": "选中文字按快捷键，<b>原地翻译改写</b><br>十三种语言随手切",
+      "hashtag": "#Mac翻译"
+    },
+    {
+      "rank": 10,
+      "slug": "siteprint",
+      "name": "Siteprint",
+      "votes": 84,
+      "logo_url": "https://ph-files.imgix.net/601b6467-2b00-4d8c-bdbf-5476ede6b07a.png?auto=format",
+      "sub": "网页设计测量器",
+      "one_liner": "量出配色字号间距，<b>一键变成提示词</b><br>一次买断9.99美元",
+      "hashtag": "#网页设计"
+    }
+  ]
+}

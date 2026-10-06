@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-04",
+  "products": [
+    {
+      "rank": 1,
+      "slug": "corespeed",
+      "name": "CoreSpeed",
+      "votes": 181,
+      "logo_url": "https://ph-files.imgix.net/7edf1ae6-26f4-46ae-9652-9da8e4fb0cb0.png?auto=format",
+      "sub": "Agent统一接入层",
+      "one_liner": "一次授权带到各助手，<b>换模型记忆还在</b><br>自然语言定审批预算",
+      "hashtag": "#Agent接入层"
+    },
+    {
+      "rank": 2,
+      "slug": "smooth-recorder",
+      "name": "Smooth Recorder",
+      "votes": 137,
+      "logo_url": "https://ph-files.imgix.net/7c901896-c2d5-4e1a-bbf6-2d5b68ba40e0.png?auto=format",
+      "sub": "Mac成品感录屏",
+      "one_liner": "停录就带缩放光标，<b>按文字直接剪片</b><br>早鸟一次买断九美元",
+      "hashtag": "#Mac录屏工具"
+    },
+    {
+      "rank": 3,
+      "slug": "gemini-4-argon",
+      "name": "Gemini 4 Argon",
+      "votes": 134,
+      "logo_url": "https://ph-files.imgix.net/38a34d6c-88d0-4627-b907-435823a7ccb5.png?auto=format",
+      "sub": "Google前沿模型",
+      "one_liner": "长任务输出扩到百万，<b>先给防御方试用</b><br>入门价两美元起步",
+      "hashtag": "#Gemini前沿模型"
+    },
+    {
+      "rank": 4,
+      "slug": "blume-3",
+      "name": "Blume 2.0",
+      "votes": 109,
+      "logo_url": "https://ph-files.imgix.net/b829e813-837c-4207-8c20-2d58cc2a9348.jpeg?auto=format",
+      "sub": "开源文档框架",
+      "one_liner": "丢进文稿就出站点，<b>助手也能直接读</b><br>可选开搜文档口",
+      "hashtag": "#开源文档框架"
+    },
+    {
+      "rank": 5,
+      "slug": "opensend-cc",
+      "name": "opensend.cc",
+      "votes": 99,
+      "logo_url": "https://ph-files.imgix.net/5c279be1-a198-4b57-a4e3-26e94b9fe2ec.png?auto=format",
+      "sub": "自托管邮件平台",
+      "one_liner": "熟悉邮件接口自家跑，<b>数据留在你边界</b><br>挂上自家发送配额",
+      "hashtag": "#自托管邮件"
+    },
+    {
+      "rank": 6,
+      "slug": "chatgpt-space",
+      "name": "ChatGPT Space",
+      "votes": 98,
+      "logo_url": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+      "sub": "AI协作工作区",
+      "one_liner": "页面文件收到一处，<b>和模型一起改稿</b><br>邀同事共编留评论",
+      "hashtag": "#AI协作空间"
+    },
+    {
+      "rank": 7,
+      "slug": "wikifix",
+      "name": "WikiFix for Confluence",
+      "votes": 84,
+      "logo_url": "https://ph-files.imgix.net/518e1662-4fd3-4da3-bd59-0bb517ad34db.png?auto=format",
+      "sub": "知识库纠错应用",
+      "one_liner": "找出互相打架的页，<b>批准前绝不改库</b><br>一键回滚进历史",
+      "hashtag": "#Confluence治理"
+    },
+    {
+      "rank": 8,
+      "slug": "octri",
+      "name": "Octri.dev",
+      "votes": 84,
+      "logo_url": "https://ph-files.imgix.net/76cebe25-55af-48f7-889b-bbb8ebde53c1.gif?auto=format",
+      "sub": "接口规格四件套",
+      "one_liner": "一份规格出文档套件，<b>客户端坏了就报</b><br>还给助手可调接口",
+      "hashtag": "#API生命周期"
+    },
+    {
+      "rank": 9,
+      "slug": "apple",
+      "name": "Pass Designer",
+      "votes": 77,
+      "logo_url": "https://ph-files.imgix.net/3840d954-7608-4f72-811b-4043dfe27d64.png?auto=format",
+      "sub": "通行证设计器",
+      "one_liner": "电脑上改就能预览，<b>真机渲染同步看</b><br>语义字段顺便校验",
+      "hashtag": "#AppleWallet设计"
+    },
+    {
+      "rank": 10,
+      "slug": "thinking-orbs",
+      "name": "Thinking Orbs",
+      "votes": 76,
+      "logo_url": "https://ph-files.imgix.net/256c270e-76ef-42e5-8717-df27a1812ad3.png?auto=format",
+      "sub": "AI状态指示组件",
+      "one_liner": "在想在搜还是压缩，<b>小球状态一眼分</b><br>无依赖约四千字节",
+      "hashtag": "#AI状态组件"
+    }
+  ]
+}

@@ -14,3 +14,21 @@ archive/*
 !archive/2026-06-16.html
 !archive/2026-06-17.md
 !archive/2026-06-17.html
+
+# --- 同步工作区（2026-10-06）：放开 archive 文本，图片/密钥/虚拟环境保持忽略 ---
+!archive/*.md
+!archive/*.html
+config.json
+.venv/
+.tmp/
+data/
+node_modules/
+.DS_Store
+*.zip
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.svg
+*.ico
