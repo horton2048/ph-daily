@@ -20,9 +20,9 @@ PH 产品、判断它的差异化、写扩展阅读档案、提炼一句话精�
 │ [代码]  │     ║    [AI]      ║     │ [代码]  │
 └────────┘     ╚══════════════╝     └────────┘
 ```
-1. `scripts/ph_daily.py` 拉 PH 榜单 → `archive/YYYY-MM-DD.md`（纯代码，不花 token）
+1. `scripts/ph_daily.py` 拉 PH 榜单 → `archive/YYYY-MM-DD.md`（纯代码，不花 token；含官方 logo、makers、media、官网直达，结构化版本在同名 `.json`；`--refresh-votes <前一天>` 次日补最终票数）
 2. `/product-sense` skill 逐个产品调研 → `context/YYYY-MM-DD-<slug>.md`，浓缩一句话精华 → `xhs/YYYY-MM-DD/data.json`（唯一花 token 的阶段）
-3. `scripts/render_xhs.py` 套模板出图 → `xhs/YYYY-MM-DD/*.png` + `caption.md`（纯代码，不花 token）
+3. `scripts/render_xhs.py` 套模板出图 → `xhs/YYYY-MM-DD/*.png` + `caption.md`（纯代码，不花 token；logo 先用 PH 官方的，不是标识再走官网品牌标识，最后色块首字母）
 
 ## 现状
 

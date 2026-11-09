@@ -20,6 +20,8 @@ ph_daily.py — Product Hunt 每日热门日报
 用法: uv run ph_daily.py            # 取 PT 今日榜
       uv run ph_daily.py --date 2026-06-01   # 取指定 PT 日
       uv run ph_daily.py --dry-run    # 不推 Slack,只打印 + 落 MD
+      uv run ph_daily.py --refresh-votes 2026-06-01   # 次日补票:回写该 PT 日最终票数
+      uv run ph_daily.py --refresh-votes 2026-06-01 --rerender  # 补票后顺带重渲图片
 """
 from __future__ import annotations
 
@@ -50,6 +52,9 @@ PROJECT_ROOT = HERE.parent
 CONFIG_PATH = PROJECT_ROOT / "config.json"
 ARCHIVE_DIR = PROJECT_ROOT / "archive"
 PT = ZoneInfo("America/Los_Angeles")
+CN = ZoneInfo("Asia/Shanghai")
+RAW_DIR = PROJECT_ROOT / "data" / "raw" / "product-hunt"
+XHS_DIR = PROJECT_ROOT / "xhs"
 
 PH_ENDPOINT = "https://api.producthunt.com/v2/api/graphql"
 # 本机网络坑(CLAUDE.local.md):对 Cloudflare 前置 endpoint,TLSv1.3 握手报
@@ -111,8 +116,14 @@ query ($after: DateTime, $before: DateTime, $n: Int!) {
         commentsCount
         url
         website
-        thumbnail { url }
+        thumbnail { type url videoUrl }
         topics(first: 3) { edges { node { name } } }
+        slug
+        dailyRank
+        featuredAt
+        media { type url videoUrl }
+        productLinks { type url }
+        makers { name username headline twitterUsername websiteUrl }
       }
     }
   }
@@ -143,7 +154,96 @@ def pt_day_bounds(day: datetime) -> tuple[str, str]:
     return to_iso(start_pt), to_iso(end_pt)
 
 
-def fetch_posts(token: str, day_pt: datetime, top_n: int) -> list[dict]:
+def _resolve_ph_redirect(url: str, timeout: int = 8) -> str:
+    """PH 的 website/productLinks 都是 producthunt.com/r/XXX 跳转链接。GET 会被 CF 挡(403),
+    HEAD 能拿到 301 Location。解析失败返回空串,调用方保留原链接。"""
+    if "producthunt.com/r/" not in (url or ""):
+        return ""
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+
+    opener = urllib.request.build_opener(_NoRedirect, urllib.request.HTTPSHandler(context=_SSL))
+    req = urllib.request.Request(url.split("?", 1)[0], method="HEAD", headers={"User-Agent": USER_AGENT})
+    try:
+        opener.open(req, timeout=timeout)
+        return ""
+    except urllib.error.HTTPError as e:
+        loc = e.headers.get("Location") or ""
+    except Exception:
+        return ""
+    for tail in ("?ref=producthunt", "&ref=producthunt"):
+        loc = loc.replace(tail, "")
+    return loc if loc.startswith(("http://", "https://")) else ""
+
+
+def _strip_utm(url: str) -> str:
+    return (url or "").split("?utm_campaign=", 1)[0]
+
+
+def _post_from_node(n: dict) -> dict:
+    """GraphQL node -> 下游统一结构。老字段保持不变,新字段只追加。"""
+    topics = [t["node"]["name"] for t in n.get("topics", {}).get("edges", [])]
+    thumb = n.get("thumbnail") or {}
+    makers = [
+        {k: m.get(k) for k in ("name", "username", "headline", "twitterUsername", "websiteUrl")}
+        for m in (n.get("makers") or [])
+        if (m.get("username") or "") != "[REDACTED]"  # PH 对未公开资料的 maker 返回 [REDACTED]
+    ]
+    return {
+        "name": n["name"],
+        "tagline": n.get("tagline") or "",
+        "description": (n.get("description") or "").strip(),
+        "votes": n.get("votesCount", 0),
+        "comments": n.get("commentsCount", 0),
+        "url": n.get("url") or "",
+        "website": n.get("website") or "",
+        "thumbnail": thumb.get("url") or "",
+        "topics": topics,
+        # ---- 2026-11-09 起新增(只加不改) ----
+        "id": n.get("id") or "",
+        "post_slug": n.get("slug") or "",
+        "daily_rank": n.get("dailyRank"),
+        "featured_at": n.get("featuredAt"),
+        # PH 官方 logo = Post.thumbnail(API 没有独立 product/logo 字段;视频缩略图类型时 url 仍是静帧)
+        "logo_url": thumb.get("url") or "",
+        "logo_type": thumb.get("type") or "",
+        "media": [
+            {"type": x.get("type") or "", "url": x.get("url") or "", "videoUrl": x.get("videoUrl")}
+            for x in (n.get("media") or [])
+        ],
+        "product_links": [
+            {"type": x.get("type") or "", "url": _strip_utm(x.get("url") or "")}
+            for x in (n.get("productLinks") or [])
+        ],
+        "makers": makers,
+        "makers_redacted": sum(1 for m in (n.get("makers") or []) if (m.get("username") or "") == "[REDACTED]"),
+    }
+
+
+def resolve_websites(posts: list[dict]) -> None:
+    """把 PH 跳转链接解析成真实官网,写进 website_resolved / product_links[].resolved。"""
+    for p in posts:
+        p["website_resolved"] = _resolve_ph_redirect(p.get("website", ""))
+        for link in p.get("product_links") or []:
+            link["resolved"] = _resolve_ph_redirect(link.get("url", ""))
+
+
+def save_raw_snapshot(day_pt: datetime, data: dict, suffix: str = "") -> Path | None:
+    """原始 GraphQL 响应落 data/raw/product-hunt/(gitignore,不进仓库)。失败不影响主流程。"""
+    try:
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        path = RAW_DIR / f"{day_pt.strftime('%Y-%m-%d')}{suffix}.json"
+        snap = {"fetched_at": datetime.now(tz=CN).isoformat(timespec="seconds"), "response": data}
+        path.write_text(json.dumps(snap, ensure_ascii=False, indent=1), encoding="utf-8")
+        return path
+    except Exception as e:
+        print(f"[warn] 原始快照写入失败: {e}", file=sys.stderr)
+        return None
+
+
+def fetch_posts(token: str, day_pt: datetime, top_n: int, raw_suffix: str | None = "") -> list[dict]:
     after, before = pt_day_bounds(day_pt)
     payload = json.dumps({
         "query": GQL_QUERY,
@@ -165,23 +265,10 @@ def fetch_posts(token: str, day_pt: datetime, top_n: int) -> list[dict]:
     if "errors" in data:
         sys.exit(f"[fatal] PH GraphQL 错误: {json.dumps(data['errors'], ensure_ascii=False)[:500]}")
 
+    if raw_suffix is not None:
+        save_raw_snapshot(day_pt, data, raw_suffix)
     edges = data.get("data", {}).get("posts", {}).get("edges", [])
-    out = []
-    for e in edges:
-        n = e["node"]
-        topics = [t["node"]["name"] for t in n.get("topics", {}).get("edges", [])]
-        out.append({
-            "name": n["name"],
-            "tagline": n.get("tagline") or "",
-            "description": (n.get("description") or "").strip(),
-            "votes": n.get("votesCount", 0),
-            "comments": n.get("commentsCount", 0),
-            "url": n.get("url") or "",
-            "website": n.get("website") or "",
-            "thumbnail": (n.get("thumbnail") or {}).get("url") or "",
-            "topics": topics,
-        })
-    return out
+    return [_post_from_node(e["node"]) for e in edges]
 
 
 def fetch_with_fallback(token: str, day_pt: datetime, top_n: int, min_count: int = 5):
@@ -340,11 +427,130 @@ def build_markdown(posts: list[dict], day_pt: datetime) -> str:
             lines.append(f"- 🏷️ {' · '.join(p['topics'])}")
         if p["website"]:
             lines.append(f"- 🔗 官网: {p['website']}")
+        if p.get("website_resolved"):
+            lines.append(f"- 🏠 官网直达: {p['website_resolved']}")
         if p.get("thumbnail"):
             lines.append(f"- 🖼️ logo: {p['thumbnail']}")
+        if p.get("makers"):
+            ms = ", ".join(f"{m['name']} (@{m['username']})" + (f" · {m['headline']}" if m.get("headline") else "")
+                           for m in p["makers"])
+            lines.append(f"- 👥 makers: {ms}")
+        if p.get("media"):
+            kinds = ", ".join(f"{k}×{sum(1 for x in p['media'] if x['type'] == k)}"
+                              for k in dict.fromkeys(x["type"] for x in p["media"]))
+            lines.append(f"- 🎞️ media: {kinds}")
         lines.append("")
     return "\n".join(lines)
 
+
+
+# --------------------------------------------------------------------------- #
+# 次日补票: 同一 PT 日重新拉一次,回写 archive + xhs data.json
+# --------------------------------------------------------------------------- #
+def _product_slug(url: str) -> str:
+    """https://www.producthunt.com/products/<slug>?utm... -> <slug>(data.json 的 slug 就是它)。"""
+    path = _strip_utm(url).split("?", 1)[0].rstrip("/")
+    return path.rsplit("/", 1)[-1] if "/products/" in path or "/posts/" in path else ""
+
+
+_FINAL_MARK = "- 🏁 最终:"
+
+
+def refresh_votes(token: str, date: str, rerender: bool = False) -> dict:
+    """按 PT 日界重拉该日榜单(多取一些防排名变动),按产品 slug/名称匹配回原来那批产品。
+
+    - archive/DATE.md: 标题行的早期票数不动(图上印的就是它),每个产品追加/更新一行
+      `- 🏁 最终: 👍 N · 💬 M · 最终第 K（刷新于 ... UTC+8）`,文件头追加/更新刷新说明。
+    - xhs/DATE/data.json: votes 改成最终票数,首次刷新时把原值留在 votes_snapshot。
+    - 默认不重渲图片;rerender=True 时调用 render_xhs.py 重出全部 PNG。
+    """
+    day = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=PT)
+    fresh = fetch_posts(token, day, 30, raw_suffix=".final")
+    stamp = datetime.now(tz=CN).strftime("%Y-%m-%d %H:%M")
+    by_slug, by_name = {}, {}
+    for rank, p in enumerate(fresh, 1):
+        p["final_rank"] = rank
+        s = _product_slug(p["url"])
+        if s:
+            by_slug.setdefault(s, p)
+        by_name.setdefault(p["name"].strip().lower(), p)
+
+    def match(slug: str, name: str):
+        return by_slug.get(slug) or by_name.get((name or "").strip().lower())
+
+    result = {"date": date, "refreshed_at": stamp, "items": [], "archive": None, "data_json": None}
+
+    md_path = ARCHIVE_DIR / f"{date}.md"
+    if md_path.exists():
+        import re
+        lines = md_path.read_text(encoding="utf-8").splitlines()
+        out, i, total = [], 0, 0
+        head_re = re.compile(r"^## (\d+)\. \[(.*?)\]\((\S*?)\)\s*(.*)$")
+        while i < len(lines):
+            ln = lines[i]
+            m = head_re.match(ln)
+            if not m:
+                if not ln.startswith(_FINAL_MARK):
+                    out.append(ln)
+                i += 1
+                continue
+            out.append(ln)
+            total += 1
+            i += 1
+            block = []
+            while i < len(lines) and not lines[i].startswith("## "):
+                if not lines[i].startswith(_FINAL_MARK):
+                    block.append(lines[i])
+                i += 1
+            hit = match(_product_slug(m.group(3)), m.group(2))
+            if hit:
+                old = re.search(r"👍 (\d+)", m.group(4))
+                result["items"].append({"rank": int(m.group(1)), "name": m.group(2),
+                                        "votes_before": int(old.group(1)) if old else None,
+                                        "votes_final": hit["votes"], "comments_final": hit["comments"],
+                                        "final_rank": hit["final_rank"]})
+                final = f"{_FINAL_MARK} 👍 {hit['votes']} · 💬 {hit['comments']} · 最终第 {hit['final_rank']}（刷新于 {stamp} UTC+8）"
+                # 插在空行之前,保持块尾空行
+                while block and block[-1] == "":
+                    block.pop()
+                block += [final, ""]
+            out.extend(block)
+        text = "\n".join(out)
+        note = f"> 🏁 最终票数已于 {stamp}（UTC+8）按 PT 日界补拉；标题行票数为出图时的早期快照。"
+        text = re.sub(r"^> 🏁 最终票数已于.*$\n?", "", text, flags=re.M)
+        text = re.sub(r"^(> 按票数排序.*)$", lambda mm: mm.group(1) + "\n" + note, text, count=1, flags=re.M)
+        md_path.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
+        result["archive"] = str(md_path)
+
+    dj = XHS_DIR / date / "data.json"
+    if dj.exists():
+        data = json.loads(dj.read_text(encoding="utf-8"))
+        changed = 0
+        for item in data.get("products", []):
+            hit = match(item.get("slug", ""), item.get("name", ""))
+            if not hit or not hit["votes"]:  # API 偶尔给 0 票(隐藏期),不拿 0 覆盖
+                continue
+            item.setdefault("votes_snapshot", item.get("votes"))
+            item["votes"] = hit["votes"]
+            item["votes_refreshed_at"] = f"{stamp} UTC+8"
+            changed += 1
+            if not any(x["rank"] == item.get("rank") for x in result["items"]):
+                result["items"].append({"rank": item.get("rank"), "name": item.get("name"),
+                                        "votes_before": item["votes_snapshot"], "votes_final": hit["votes"],
+                                        "comments_final": hit["comments"], "final_rank": hit["final_rank"]})
+        dj.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        result["data_json"] = str(dj)
+        print(f"[info] data.json 已回写 {changed} 个产品的最终票数")
+        if rerender:
+            subprocess.run([sys.executable, str(HERE / "render_xhs.py"), str(dj)], check=False)
+
+    for it in sorted(result["items"], key=lambda x: x["rank"] or 99):
+        print(f"  #{it['rank']} {it['name']}: 👍 {it['votes_before']} -> {it['votes_final']} (最终第 {it['final_rank']})")
+    expected = total if md_path.exists() else len(result["items"])
+    missing = expected - len(result["items"])
+    if missing > 0:
+        print(f"[warn] 有 {missing} 个产品没匹配上(可能改名/下架),保持原票数", file=sys.stderr)
+    return result
 
 
 # --------------------------------------------------------------------------- #
@@ -358,10 +564,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="指定 PT 日期 YYYY-MM-DD(默认 PT 今日)")
     ap.add_argument("--dry-run", action="store_true", help="不推 Slack,只打印 + 落 MD")
+    ap.add_argument("--refresh-votes", metavar="DATE", help="次日补票:重拉该 PT 日最终票数,回写 archive 与 xhs/DATE/data.json")
+    ap.add_argument("--rerender", action="store_true", help="配合 --refresh-votes:回写后重渲该日 PNG(默认不重渲)")
+    ap.add_argument("--out-dir", help="归档写到这个目录而不是 archive/(验证用,不覆盖正式归档)")
     args = ap.parse_args()
 
     cfg = load_config()
     top_n = int(cfg.get("top_n", 10))
+
+    if args.refresh_votes:
+        refresh_votes(cfg["ph_token"], args.refresh_votes, rerender=args.rerender)
+        return
 
     if args.date:
         day = datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=PT)
@@ -375,11 +588,15 @@ def main() -> None:
     print(f"[info] 取到 {len(posts)} 个产品 (PT {used_day.strftime('%Y-%m-%d')})")
 
     backfill_votes_from_producthunt_pages(posts)
+    resolve_websites(posts)
 
     # 归档（zh_tagline/comment 留空；文案由 Agent 按 product-sense skill 写）
-    ARCHIVE_DIR.mkdir(exist_ok=True)
+    out_dir = Path(args.out_dir) if args.out_dir else ARCHIVE_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
     md = build_markdown(posts, used_day)
-    md_path = ARCHIVE_DIR / f"{used_day.strftime('%Y-%m-%d')}.md"
+    md_path = out_dir / f"{used_day.strftime('%Y-%m-%d')}.md"
+    # 下游可直接读的结构化数据(含 makers/media/官方 logo/官网直达),与 MD 同名
+    md_path.with_suffix(".json").write_text(json.dumps(posts, ensure_ascii=False, indent=1), encoding="utf-8")
     md_path.write_text(md, encoding="utf-8")
     print(f"[info] 已归档 {md_path}")
 

@@ -14,9 +14,11 @@ HTML 落在 xhs/YYYY-MM-DD/temp_html/，渲染后不删——留底用于事后 
 
 logo 下载后规范化，暂存在 xhs/YYYY-MM-DD/.tmp/logos/；下载或解析失败
 （SVG、404、超时等）自动退化成纯色块+首字母，不让单个 logo 问题挡住
-整批渲染。无 logo_url，或缩略图明显不是标识（过宽、照片、整幅截图/海报）时，
-先按官网查品牌标识（apple-touch-icon、最大 rel=icon、页面上的 logo 图），
-查不到再退回首字母。
+整批渲染。logo 优先级：① PH 官方 logo（Post.thumbnail，data.json 的 ph_logo_url，
+或 logo_url 本身就是 ph-files 链接）判定为真标识就直接用；② 不是标识（过宽、照片、
+整幅截图/海报）时，按官网查品牌标识（apple-touch-icon、最大 rel=icon、页面上的 logo 图）；
+③ 查不到再退回色块+首字母。每张卡用的来源记在 .tmp/logos/sources.json。
+data.json 里 "logo_lock": true 时 logo_url（人工核实的标）排在官方之前。
 
 用法:
   python3 scripts/render_xhs.py xhs/2026-08-11/data.json
@@ -148,12 +150,43 @@ def _non_mark_reason(img: Image.Image) -> str | None:
     if mean_edge < 16 and near_bg > 0.45 and lum_std < 40 and top < 0.75:
         return "mostly a photo"
     # 大段文字海报：平地底上到处是硬边，不是单独的标。
-    if mean_edge >= 45 and lum_std >= 50 and top >= 0.55:
+    # 但只有寥寥几种颜色的黑白/双色标（如 OpenAI 花结）也满足这组条件，豁免。
+    if mean_edge >= 45 and lum_std >= 50 and top >= 0.55 and not _is_flat_mark(small):
         return "poster"
     return None
 
 
+def _is_flat_mark(small: Image.Image) -> bool:
+    """少量平涂色块组成的图形标（黑白/双色 logo）。两种情况都算：
+    16 级量化后颜色种数少且前三色占大头；或几乎全灰阶、且绝大多数像素是纯黑/纯白（黑底白标）。"""
+    counts: dict[tuple, int] = {}
+    gray = ext = opaque = 0
+    for r, g, b, a in small.getdata():
+        key = (r // 16, g // 16, b // 16, a >= 128)
+        counts[key] = counts.get(key, 0) + 1
+        if a >= 128:
+            opaque += 1
+            gray += max(r, g, b) - min(r, g, b) < 30
+            lum = (r + g + b) / 3
+            ext += lum < 50 or lum > 205
+    total = sum(counts.values()) or 1
+    top3 = sum(sorted(counts.values())[-3:]) / total
+    if len(counts) <= 24 and top3 >= 0.75:
+        return True
+    return opaque > 0 and gray / opaque >= 0.97 and ext / opaque >= 0.8
+
+
+# 文件魔数：链接以 .svg 结尾（或 content-type 写 svg）但实际是位图的情况很常见，先看字节。
+_RASTER_MAGIC = (b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"BM", b"\x00\x00\x01\x00")
+
+
+def _is_raster(data: bytes) -> bool:
+    return data.startswith(_RASTER_MAGIC) or (data[:4] == b"RIFF" and data[8:12] == b"WEBP")
+
+
 def _is_svg(data: bytes, ctype: str, url: str) -> bool:
+    if _is_raster(data):
+        return False
     if "svg" in (ctype or "").lower() or url.lower().split("?", 1)[0].endswith(".svg"):
         return True
     head = data[:300].lstrip().lower()
@@ -428,10 +461,9 @@ def _urls_from_archive(date: str, slug: str) -> list[str]:
     idx = text.find(f"/products/{slug}")
     if idx < 0:
         return []
-    m = re.search(r"官网:\s*(https?://\S+)", text[idx:idx + 900])
-    if not m:
-        return []
-    return [_clean_url(m.group(1))]
+    # 「官网直达」是 ph_daily.py 解析好的真实官网（2026-11-09 起），排在 PH 跳转链接前
+    found = re.findall(r"官网(直达)?:\s*(https?://\S+)", text[idx:idx + 1400].split("\n## ", 1)[0])
+    return [_clean_url(u) for _, u in sorted(found, key=lambda x: not x[0])]
 
 
 def _candidate_sites(slug: str, date: str | None, website: str | None) -> list[str]:
@@ -481,6 +513,25 @@ def _logo_src_label(url: str) -> str:
     return url.split("?", 1)[0]
 
 
+_OFFICIAL_HOSTS = {"ph-files.imgix.net"}
+
+
+def _is_official_ph(url: str | None) -> bool:
+    return bool(url) and not url.startswith("data:") and _host(url) in _OFFICIAL_HOSTS
+
+
+def _record_source(tmp_logos_dir: Path, slug: str, source: str, url: str | None, notes: list[str]) -> None:
+    """记下每张卡 logo 的来源（official / manual / site / letter），供 check_logo.py 和复盘看。"""
+    path = tmp_logos_dir / "sources.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except Exception:
+        data = {}
+    data[slug] = {"source": source, "url": _logo_src_label(url) if url else None, "notes": notes}
+    tmp_logos_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def stage_logo(
     slug: str,
     logo_url: str | None,
@@ -488,30 +539,50 @@ def stage_logo(
     name: str,
     website: str | None = None,
     date: str | None = None,
+    official_url: str | None = None,
+    lock: bool = False,
 ) -> str:
-    """下载+规范化 logo。无标识或缩略图不是标识时先查品牌 logo，失败再用色块首字母。"""
+    """下载+规范化 logo。PH 官方 logo 优先；不是标识时查官网品牌 logo，失败再用色块首字母。"""
     dest = tmp_logos_dir / f"{slug}.png"
     if dest.exists():
         return f'<img class="logo cover" src="{dest.as_uri()}">'
     tmp_logos_dir.mkdir(parents=True, exist_ok=True)
     img = None
-    if logo_url:
+    # ① 官方层：ph_logo_url / ph-files 上的 logo_url；logo_lock 时人工 logo_url 排最前
+    cands: list[tuple[str, str]] = []
+    ordered = [("manual", logo_url)] if lock else []
+    ordered += [("official", official_url),
+                ("official" if _is_official_ph(logo_url) else "manual", logo_url)]
+    for label, u in ordered:
+        if u and all(u != c[1] for c in cands):
+            cands.append((label, u))
+    notes: list[str] = []
+    used = None
+    for label, u in cands:
         try:
-            img, reason = _load_mark(logo_url, tmp_logos_dir)
+            img, reason = _load_mark(u, tmp_logos_dir)
         except Exception as e:
             img, reason = None, str(e)
-        if img is None:
-            why = "下载/处理失败" if reason == "download failed" else f"缩略图不是标识（{reason}）"
-            print(f"  [warn] {slug}: {why}，转查品牌标识")
-    else:
+        if img is not None:
+            used = (label, u)
+            print(f"  [logo] {slug}: {'PH 官方 logo' if label == 'official' else '人工指定 logo'} {_logo_src_label(u)}")
+            break
+        why = "下载/处理失败" if reason == "download failed" else f"缩略图不是标识（{reason}）"
+        notes.append(f"{label}: {reason}")
+        print(f"  [warn] {slug}: {why}，转查品牌标识")
+    if not cands:
         print(f"  [warn] {slug}: 无 logo_url，转查品牌标识")
+    # ② 原有兜底：官网品牌标识 → ③ 色块首字母
     if img is None:
         found = _lookup_brand_logo(slug, date, website, tmp_logos_dir)
         if not found:
             print(f"  [warn] {slug}: lookup failed，用色块首字母")
+            _record_source(tmp_logos_dir, slug, "letter", None, notes)
             return _fallback_logo_html(name)
         img, src = found
+        used = ("site", src)
         print(f"  [logo] {slug}: 品牌标识 {_logo_src_label(src)}")
+    _record_source(tmp_logos_dir, slug, used[0], used[1], notes)
     _write_logo(img, dest)
     return f'<img class="logo cover" src="{dest.as_uri()}">'
 
@@ -607,7 +678,8 @@ def main() -> None:
     for item in sorted(data["products"], key=lambda p: p["rank"]):
         if only and item["slug"] not in only:
             continue
-        logo_html = stage_logo(item["slug"], item.get("logo_url"), tmp_logos_dir, item["name"], website=item.get("website"), date=date)
+        logo_html = stage_logo(item["slug"], item.get("logo_url"), tmp_logos_dir, item["name"], website=item.get("website"), date=date,
+                               official_url=item.get("ph_logo_url"), lock=bool(item.get("logo_lock")))
         html_text = fill_template(template_text, item, date, logo_html)
         # mono 风格加 -mono 后缀实现与 cream-glass 并存；默认无后缀
         html_path = temp_html_dir / f"{item['rank']:02d}-{item['slug']}{suffix}.html"

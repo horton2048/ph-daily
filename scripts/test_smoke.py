@@ -30,4 +30,18 @@ print("\n>>> 测 Slack blocks 渲染 ...")
 blocks = m.build_slack_blocks(posts, day)
 print(f"  blocks 数: {len(blocks['blocks'])}")
 print(json.dumps(blocks["blocks"][3], ensure_ascii=False, indent=2))
+print("\n>>> 测新增字段（makers/media/官方 logo），老字段不变 ...")
+node = {"id": "1", "name": "Demo", "tagline": "t", "votesCount": 5, "commentsCount": 1,
+        "url": "https://www.producthunt.com/products/demo?utm_campaign=x", "website": "https://www.producthunt.com/r/AB",
+        "thumbnail": {"type": "image", "url": "https://ph-files.imgix.net/x.png?auto=format", "videoUrl": None},
+        "topics": {"edges": [{"node": {"name": "AI"}}]}, "slug": "demo-2", "dailyRank": 3,
+        "media": [{"type": "image", "url": "https://ph-files.imgix.net/m.png", "videoUrl": None}],
+        "productLinks": [{"type": "Website", "url": "https://www.producthunt.com/r/AB?utm_campaign=x"}],
+        "makers": [{"name": "Ann", "username": "ann", "headline": "CEO"}, {"name": "[REDACTED]", "username": "[REDACTED]"}]}
+p = m._post_from_node(node)
+assert p["thumbnail"] == p["logo_url"] and p["votes"] == 5 and p["topics"] == ["AI"]
+assert [x["username"] for x in p["makers"]] == ["ann"] and p["makers_redacted"] == 1
+assert m._product_slug(p["url"]) == "demo" and p["product_links"][0]["url"].endswith("/r/AB")
+md2 = m.build_markdown([p], day)
+assert "👥 makers: Ann (@ann)" in md2 and "🎞️ media: image×1" in md2 and "🖼️ logo:" in md2
 print("\n[ok] 渲染链路通过。")

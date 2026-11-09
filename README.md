@@ -10,6 +10,13 @@
 
 - **数据源:Product Hunt 官方 V2 GraphQL API**。V1 REST 已于 2023 关停;爬虫违反 ToS 且易碎。
   Developer Token 免费、只读、不过期。注意默认仅限非商用。
+- **抓取字段(2026-11-09 起扩充,只加不改)**:除名字/简介/票数/链接/缩略图外,同一次查询还拉
+  `thumbnail{type url videoUrl}`(= PH 官方 logo)、`media`、`productLinks`、`makers`、`slug`、`dailyRank`,
+  并用 HEAD 解析 PH `/r/` 跳转得到真实官网。归档 MD 多了 `🏠 官网直达` / `👥 makers` / `🎞️ media` 行,
+  同名 `archive/YYYY-MM-DD.json` 是完整结构化数据;原始响应落 `data/raw/product-hunt/`。一次查询约 100 复杂度。
+- **logo 优先级**(`render_xhs.py`):① PH 官方 logo(判定为真标识就直接用,按文件魔数识别格式,
+  黑白/双色简洁标不算海报)→ ② 官网品牌标识(apple-touch-icon / rel=icon / 页面 logo)→ ③ 色块+首字母。
+  来源写进 `xhs/DATE/.tmp/logos/sources.json`,`check_logo.py` 会一并列出。
 - **时区:按太平洋时间(PT)日界取榜**。PH 的"今日榜"按 PT 0 点结算;脚本用显式
   `postedAfter/postedBefore`,不依赖 API 隐式 today。产品太少时自动回退前一 PT 日。
 - **文案:由 Agent 按 `.claude/skills/product-sense` 撰写**。脚本只负责抓数据与渲染，
@@ -48,6 +55,9 @@ cp config.example.json config.json   # 填入 ph_token（必需）; top_n 默认
 uv run scripts/ph_daily.py --dry-run          # 抓取 + 落 MD,不推 Slack(预览)
 uv run scripts/ph_daily.py                    # 完整跑一次(含 Slack，若已配置)
 uv run scripts/ph_daily.py --date 2026-06-01  # 取指定 PT 日
+uv run scripts/ph_daily.py --refresh-votes 2026-06-01  # 次日补票:回写最终票数到 archive MD + xhs data.json(不重渲图)
+uv run scripts/ph_daily.py --refresh-votes 2026-06-01 --rerender  # 补票并重渲该日 PNG
+uv run scripts/ph_daily.py --date 2026-06-01 --dry-run --out-dir .tmp/x  # 抓到临时目录,不覆盖正式归档
 
 bash run_daily_full.sh                # 阶段1: 抓数据+归档；阶段2交给 Agent（product-sense）
 ```
@@ -67,5 +77,6 @@ bash run_daily_full.sh                # 阶段1: 抓数据+归档；阶段2交�
 - **PH 403/401**:token 没填或失效 → 重新生成。
 - **PH 返回空**:可能 PT 当日刚开始,加 `--date` 指定昨天试试。
 - **Slack 没收到**:webhook URL 错或频道被移除 → 重建 webhook。日志看 `logs/`。
-- **限流**:PH 6250 复杂度/15 分钟,每天一次远没问题。
+- **限流**:PH 6250 复杂度/15 分钟,每天一次远没问题(扩字段后的查询和补票各约 100)。
+- **票数是早期快照**:每晚开工前先跑 `--refresh-votes <前一天>` 补上一期最终票数;图片默认不动。
 - **需要中文文案 / 信息图**:对 Agent 说"做今天的 product-sense"，按 skill 执行；脚本侧不再调模型。
